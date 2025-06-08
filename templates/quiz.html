@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Take a Quiz</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; }
+    input, select, button, textarea { margin: 0.3em 0.5em 0.3em 0; }
+    .quiz-form, #quiz-section, #quiz-feedback, #quiz-stats, #quiz-history {
+      background: #fafafa; border: 1px solid #ccc; padding: 1em; margin-top: 1em;
+    }
+    .quiz-q { margin-bottom: 1.5em; }
+    .quiz-feedback { margin-top: 1em; }
+    .mcq { color: #2b7a78; }
+    .subjective { color: #b83b5e; }
+    #ratio-info { margin: 0.5em 0 0.5em 0; font-weight: bold; color: #1b4b68; }
+    .attempt-header { background: #eee; padding: 0.3em 0.8em; margin-bottom: 0.5em; font-weight: bold;}
+    .attempt-list { list-style: none; padding: 0; }
+    .attempt-list li { margin: 0.5em 0; }
+    .attempt-link { cursor:pointer; color: #0b5c9a; text-decoration: underline;}
+    .selected-attempt { background: #e0f7fa; }
+  </style>
+</head>
+<body>
+  <h1>Take a Quiz</h1>
+  <form id="quizStartForm" class="quiz-form">
+    <label>Topic: <input type="text" id="quiz_topic" value="Python"></label>
+    <label>Difficulty:
+      <select id="quiz_difficulty">
+        <option value="">Any</option>
+        <option value="novice">Novice</option>
+        <option value="beginner" selected>Beginner</option>
+        <option value="intermediate">Intermediate</option>
+        <option value="advanced">Advanced</option>
+      </select>
+    </label>
+    <label>Skill Type:
+      <select id="quiz_skill_type">
+        <option value="">Any</option>
+        <option value="technical" selected>Technical</option>
+        <option value="soft_skill">Soft Skill</option>
+      </select>
+    </label>
+    <label>Managerial Level:
+      <select id="quiz_managerial_level">
+        <option value="">Any</option>
+        <option value="junior">Junior</option>
+        <option value="manager">Manager</option>
+        <option value="senior">Senior</option>
+      </select>
+    </label>
+    <label>Question Type:
+      <select id="quiz_question_type">
+        <option value="">Any</option>
+        <option value="mcq">MCQ</option>
+        <option value="subjective">Subjective</option>
+      </select>
+    </label>
+    <label>How many? <input type="number" id="quiz_num_questions" min="1" max="10" value="5"></label>
+    <label>User ID: <input type="text" id="quiz_user_id" value="user1"></label>
+    <button type="submit">Start Quiz</button>
+  </form>
+  <div id="ratio-info"></div>
+  <div id="quiz-section"></div>
+  <div id="quiz-feedback"></div>
+  <div id="quiz-stats"></div>
+  <div id="quiz-history"></div>
+
+<script>
+const backendUrl = ""; // If running on same domain/port, leave empty
+
+let quizQuestions = [];
+let quizUserId = "";
+let currentAttemptId = null;
+
+// --- Managerial Ratio UI logic ---
+async function updateRatioInfo() {
+  const managerialLevel = document.getElementById("quiz_managerial_level").value.trim();
+  const numQuestions = parseInt(document.getElementById("quiz_num_questions").value, 10) || 5;
+  const ratioInfoDiv = document.getElementById("ratio-info");
+  if (!managerialLevel) {
+    ratioInfoDiv.textContent = "";
+    return;
+  }
+  try {
+    const resp = await fetch(`${backendUrl}/managerial_ratio/${encodeURIComponent(managerialLevel)}`);
+    if (!resp.ok) throw new Error();
+    const ratio = await resp.json();
+    const softSkill = Math.round(numQuestions * ratio.soft_skill_ratio / 100);
+    const technical = numQuestions - softSkill;
+    ratioInfoDiv.textContent = `Quiz will include ${softSkill} soft skill and ${technical} technical questions (according to ${managerialLevel} ratio).`;
+  } catch (e) {
+    ratioInfoDiv.textContent = `No ratio found for "${managerialLevel}". Quiz will use your other filters.`;
+  }
+}
+
+document.getElementById("quiz_managerial_level").addEventListener("change", updateRatioInfo);
+document.getElementById("quiz_num_questions").addEventListener("input", updateRatioInfo);
+updateRatioInfo();
+
+document.getElementById("quizStartForm").onsubmit = async function(e) {
+  e.preventDefault();
+  document.getElementById("quiz-section").innerHTML = "Loading quiz...";
+  document.getElementById("quiz-feedback").innerHTML = "";
+  document.getElementById("quiz-stats").innerHTML = "";
+  quizUserId = document.getElementById("quiz_user_id").value.trim();
+  currentAttemptId = null;
+  const req = {
+    topic: document.getElementById("quiz_topic").value,
+    difficulty: document.getElementById("quiz_difficulty").value || undefined,
+    skill_type: document.getElementById("quiz_skill_type").value || undefined,
+    managerial_level: document.getElementById("quiz_managerial_level").value || undefined,
+    question_type: document.getElementById("quiz_question_type").value || undefined,
+    num_questions: parseInt(document.getElementById("quiz_num_questions").value, 10),
+    user_id: quizUserId
+  };
+  try {
+    // 1. Create quiz attempt
+    const attemptResp = await fetch(`${backendUrl}/quiz/attempt/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: quizUserId,
+        topic: req.topic,
+        difficulty: req.difficulty,
+        skill_type: req.skill_type,
+        managerial_level: req.managerial_level,
+        num_questions: req.num_questions
+      })
+    });
+    const attempt = await attemptResp.json();
+    if (!attempt.id) throw new Error("Couldn't create quiz attempt.");
+    currentAttemptId = attempt.id;
+
+    // 2. Get questions
+    const resp = await fetch(`${backendUrl}/quiz/start/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req)
+    });
+    quizQuestions = await resp.json();
+    if (!Array.isArray(quizQuestions) || quizQuestions.length === 0) {
+      document.getElementById("quiz-section").innerHTML = "No questions found for this quiz.";
+      return;
+    }
+    renderQuizForm(quizQuestions);
+  } catch (err) {
+    document.getElementById("quiz-section").innerHTML = "Error loading quiz: " + err;
+  }
+};
+
+function renderQuizForm(questions) {
+  let html = `<form id="answerQuizForm">`;
+  questions.forEach((q, idx) => {
+    html += `<div class="quiz-q"><b>Q${idx+1}:</b> ${q.question_text}<br>`;
+    if (q.type === "mcq" && q.options && q.options.length) {
+      q.options.forEach((opt, oidx) => {
+        html += `<label><input type="radio" name="q_${q.id}" value="${opt.replace(/"/g,'&quot;')}" required> ${opt}</label><br>`;
+      });
+    } else if (q.type === "subjective") {
+      html += `<textarea name="q_${q.id}" rows="3" style="width:95%;" required placeholder="Your answer"></textarea>`;
+    }
+    html += `</div>`;
+  });
+  html += `<button type="submit">Submit Answers & Get Results</button></form>`;
+  document.getElementById("quiz-section").innerHTML = html;
+  document.getElementById("answerQuizForm").onsubmit = submitQuizAnswers;
+}
+
+async function submitQuizAnswers(e) {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const answers = quizQuestions.map(q => ({
+    question_id: q.id,
+    user_answer: formData.get("q_" + q.id),
+    user_id: quizUserId || undefined
+  }));
+  document.getElementById("quiz-feedback").innerHTML = "Evaluating...";
+  try {
+    const resp = await fetch(`${backendUrl}/quiz/evaluate/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answers, quiz_attempt_id: currentAttemptId })
+    });
+    const data = await resp.json();
+    if (data.detail) throw new Error(data.detail);
+    renderQuizFeedback(data);
+    await fetchAndRenderStats(quizUserId);
+    await fetchAndRenderHistory(quizUserId, data.quiz_attempt_id);
+  } catch (err) {
+    document.getElementById("quiz-feedback").innerHTML = "Error evaluating: " + err;
+  }
+}
+
+function renderQuizFeedback(data) {
+  let html = `<h3>Quiz Feedback</h3>`;
+  html += `<b>Score:</b> ${data.total_score} / ${data.total_questions} (${data.percentage_score.toFixed(1)}%)<br>`;
+  html += `<ol>`;
+  data.evaluations.forEach(evalItem => {
+    html += `<li>
+      <b>Q:</b> ${evalItem.question_text}<br>
+      <b>Your Answer:</b> ${evalItem.user_answer}<br>
+      <b>Score:</b> ${(evalItem.score*100).toFixed(1)}%<br>
+      <b>${evalItem.is_correct ? "<span style='color:green'>Correct</span>" : "<span style='color:red'>Incorrect</span>"}</b><br>
+      <b>Feedback:</b> ${evalItem.feedback || "n/a"}<br>
+    </li>`;
+  });
+  html += `</ol>`;
+  document.getElementById("quiz-feedback").innerHTML = html;
+}
+
+// --- Statistics UI ---
+async function fetchAndRenderStats(userId) {
+  if (!userId) return;
+  document.getElementById("quiz-stats").innerHTML = "Loading stats...";
+  try {
+    const resp = await fetch(`${backendUrl}/stats/user/${encodeURIComponent(userId)}`);
+    const stats = await resp.json();
+    if (stats.detail) throw new Error(stats.detail);
+    let html = `<h3>Your Quiz Statistics</h3>
+      <ul>
+        <li>Total Attempted: ${stats.total_questions_attempted}</li>
+        <li>Overall Average Score: ${(stats.overall_percentage).toFixed(1)}%</li>
+        <li>MCQ Accuracy: ${(stats.mcq_accuracy).toFixed(1)}%</li>
+        <li>Subjective Average: ${(stats.subjective_percentage).toFixed(1)}%</li>
+        <li>Recent Performance (last 10): ${(stats.recent_performance).toFixed(1)}%</li>
+        <li>First Attempt: ${new Date(stats.first_attempt).toLocaleString()}</li>
+        <li>Last Attempt: ${new Date(stats.last_attempt).toLocaleString()}</li>
+      </ul>`;
+    document.getElementById("quiz-stats").innerHTML = html;
+  } catch (err) {
+    document.getElementById("quiz-stats").innerHTML = "Error loading stats: " + err;
+  }
+}
+
+// --- Quiz History UI ---
+async function fetchAndRenderHistory(userId, highlightAttemptId=null) {
+  if (!userId) return;
+  document.getElementById("quiz-history").innerHTML = "Loading your quiz history...";
+  try {
+    const resp = await fetch(`${backendUrl}/quiz/attempts/${encodeURIComponent(userId)}`);
+    const data = await resp.json();
+    if (!Array.isArray(data) || data.length === 0) {
+      document.getElementById("quiz-history").innerHTML = "<b>No quiz history found.</b>";
+      return;
+    }
+    let html = `<h3>Your Quiz Attempts</h3><ul class="attempt-list">`;
+    data.forEach((attempt, idx) => {
+      html += `<li${highlightAttemptId && attempt.id === highlightAttemptId ? ' class="selected-attempt"' : ''}>
+        <span class="attempt-link" onclick="showQuizAttempt(${attempt.id}, this)">${attempt.id === highlightAttemptId ? "<b>Attempt #" : "Attempt #"}${data.length-idx}${attempt.id === highlightAttemptId ? "</b>" : ""}</span>
+        <span style="color:#666"> (${new Date(attempt.started_at).toLocaleString()})</span>
+        ${typeof attempt.score === "number" ? `<span style="color:#197d41;">Score: ${attempt.score}</span>` : ""}
+      </li>`;
+    });
+    html += `</ul>
+      <div id="selected-attempt-detail"></div>
+    `;
+    document.getElementById("quiz-history").innerHTML = html;
+    // If just submitted, show that attempt
+    if (highlightAttemptId) showQuizAttempt(highlightAttemptId);
+  } catch (err) {
+    document.getElementById("quiz-history").innerHTML = "Error loading history: " + err;
+  }
+}
+
+// Show attempt details
+window.showQuizAttempt = async function(attemptId, elem) {
+  if (elem) {
+    // Mark as selected
+    document.querySelectorAll('.attempt-list li').forEach(li => li.classList.remove('selected-attempt'));
+    elem.parentElement.classList.add('selected-attempt');
+  }
+  const detailDiv = document.getElementById("selected-attempt-detail");
+  detailDiv.innerHTML = "Loading attempt details...";
+  try {
+    const resp = await fetch(`${backendUrl}/quiz/attempt/${attemptId}/evaluations`);
+    const evals = await resp.json();
+    if (!Array.isArray(evals) || evals.length === 0) {
+      detailDiv.innerHTML = "<b>No details found for this attempt.</b>";
+      return;
+    }
+    let html = `<div class="attempt-header">Attempt #${attemptId} (${new Date(evals[0].created_at || Date.now()).toLocaleString()})</div>`;
+    html += `<ol>`;
+    evals.forEach(evalItem => {
+      html += `<li>
+        <b>Q:</b> ${evalItem.question_text}<br>
+        <b>Your Answer:</b> ${evalItem.user_answer}<br>
+        <b>Score:</b> ${(evalItem.score*100).toFixed(1)}%<br>
+        <b>${evalItem.is_correct ? "<span style='color:green'>Correct</span>" : "<span style='color:red'>Incorrect</span>"}</b><br>
+        <b>Feedback:</b> ${evalItem.feedback || "n/a"}<br>
+      </li>`;
+    });
+    html += `</ol>`;
+    detailDiv.innerHTML = html;
+  } catch (err) {
+    detailDiv.innerHTML = "Error loading attempt details: " + err;
+  }
+}
+
+// On page load, load history if a user is set
+window.addEventListener("DOMContentLoaded", function(){
+  quizUserId = document.getElementById("quiz_user_id").value.trim();
+  if (quizUserId) fetchAndRenderHistory(quizUserId);
+});
+document.getElementById("quiz_user_id").addEventListener("change", function(){
+  quizUserId = this.value.trim();
+  if (quizUserId) fetchAndRenderHistory(quizUserId);
+});
+</script>
+</body>
+</html>

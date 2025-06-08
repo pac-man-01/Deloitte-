@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz Generator Frontend</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; }
+    input, select, button { margin: 0.3em 0.5em 0.3em 0; }
+    #result, #db-questions { background: #fafafa; border: 1px solid #ccc; padding: 1em; margin-top: 1em; }
+    .mcq { color: #2b7a78; }
+    .subjective { color: #b83b5e; }
+  </style>
+</head>
+<body>
+  <h1>Generate Quiz Questions</h1>
+  <form id="genForm">
+    <label>Topic: <input type="text" id="topic" value="Python"></label>
+    <label>Difficulty:
+      <select id="difficulty">
+        <option value="novice">Novice</option>
+        <option value="beginner" selected>Beginner</option>
+        <option value="intermediate">Intermediate</option>
+        <option value="advanced">Advanced</option>
+      </select>
+    </label>
+    <label>Skill Type:
+      <select id="skill_type">
+        <option value="technical" selected>Technical</option>
+        <option value="soft_skill">Soft Skill</option>
+      </select>
+    </label>
+    <label>Managerial Level: <input type="text" id="managerial_level" placeholder="Optional"></label>
+    <label>Question Type:
+      <select id="question_type">
+        <option value="mcq" selected>MCQ</option>
+        <option value="subjective">Subjective</option>
+      </select>
+    </label>
+    <label>How many? <input type="number" id="num_questions" min="1" max="10" value="5"></label>
+    <button type="submit">Generate & Store</button>
+  </form>
+
+  <div id="result"></div>
+  <hr>
+  <h2>Questions in Database</h2>
+  <button onclick="fetchDBQuestions()">Refresh DB Questions</button>
+  <div id="db-questions"></div>
+
+<script>
+const backendUrl = ""; // if running on same domain/port, leave empty
+
+document.getElementById("genForm").onsubmit = async function(e){
+  e.preventDefault();
+  const req = {
+    topic: document.getElementById("topic").value,
+    difficulty: document.getElementById("difficulty").value,
+    skill_type: document.getElementById("skill_type").value,
+    managerial_level: document.getElementById("managerial_level").value || null,
+    num_questions: parseInt(document.getElementById("num_questions").value, 10),
+    question_type: document.getElementById("question_type").value
+  };
+  document.getElementById("result").innerHTML = "Generating, please wait...";
+  try {
+    const resp = await fetch(`${backendUrl}/generate_questions_batch/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req)
+    });
+    const data = await resp.json();
+    if (!Array.isArray(data)) throw new Error(data.detail || "Unexpected response");
+    document.getElementById("result").innerHTML = "<b>Generated & Stored:</b><br>" + data.map(renderQ).join("<hr>");
+  } catch (err) {
+    document.getElementById("result").innerHTML = "Error:<br>" + err;
+  }
+  fetchDBQuestions();
+};
+
+function renderQ(q) {
+  if (q.type === "mcq") {
+    return `<div class="mcq"><b>Q:</b> ${q.question_text}<br>
+      <b>Options:</b> ${q.options.join(", ")}<br>
+      <b>Answer:</b> ${q.correct_option}</div>`;
+  } else {
+    return `<div class="subjective"><b>Q:</b> ${q.question_text}<br>
+      <b>Model Answer:</b> ${q.answer}</div>`;
+  }
+}
+
+async function fetchDBQuestions() {
+  document.getElementById("db-questions").innerHTML = "Loading...";
+  try {
+    const resp = await fetch(`${backendUrl}/questions/`);
+    const data = await resp.json();
+    if (!Array.isArray(data)) throw new Error(data.detail || "Unexpected response");
+    document.getElementById("db-questions").innerHTML = data.map(renderQ).join("<hr>");
+  } catch (err) {
+    document.getElementById("db-questions").innerHTML = "Error:<br>" + err;
+  }
+}
+
+// Initial load
+fetchDBQuestions();
+</script>
+</body>
+</html>
