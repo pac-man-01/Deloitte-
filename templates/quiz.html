@@ -4,76 +4,546 @@
   <meta charset="UTF-8">
   <title>Take a Quiz</title>
   <style>
-    body { font-family: sans-serif; margin: 2em; }
-    input, select, button, textarea { margin: 0.3em 0.5em 0.3em 0; }
-    .quiz-form, #quiz-section, #quiz-feedback, #quiz-stats, #quiz-history {
-      background: #fafafa; border: 1px solid #ccc; padding: 1em; margin-top: 1em;
+    :root {
+      --deloitte-green: #86BC25;
+      --deloitte-mid: #23272A;
+      --deloitte-dark: #18191A;
+      --text-main: #F5F6FA;
+      --text-secondary: #BFC7CF;
+      --input-bg: #181A1B;
+      --input-border: #353535;
+      --input-focus: #86BC25;
+      --divider: #23272A;
     }
-    .quiz-q { margin-bottom: 1.5em; }
-    .quiz-feedback { margin-top: 1em; }
-    .mcq { color: #2b7a78; }
-    .subjective { color: #b83b5e; }
-    #ratio-info { margin: 0.5em 0 0.5em 0; font-weight: bold; color: #1b4b68; }
-    .attempt-header { background: #eee; padding: 0.3em 0.8em; margin-bottom: 0.5em; font-weight: bold;}
-    .attempt-list { list-style: none; padding: 0; }
-    .attempt-list li { margin: 0.5em 0; }
-    .attempt-link { cursor:pointer; color: #0b5c9a; text-decoration: underline;}
-    .selected-attempt { background: #e0f7fa; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background-color: var(--deloitte-dark);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      font-size: 17px;
+      opacity: 0;
+      animation: bodyFadeIn 0.7s cubic-bezier(.19,1,.22,1) forwards;
+    }
+    @keyframes bodyFadeIn {
+      to { opacity: 1; }
+    }
+    header {
+      background-color: var(--deloitte-mid);
+      padding: 16px 28px 10px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--deloitte-green);
+      box-shadow: 0 2px 16px 0 rgba(134,188,37,0.09);
+      opacity: 0;
+      transform: translateY(-16px);
+      animation: fadeInDown 0.7s cubic-bezier(.19,1,.22,1) 0.1s forwards;
+    }
+    @keyframes fadeInDown {
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    header .logo {
+      height: 42px;
+      background: transparent;
+      filter: brightness(1.1) contrast(1.2);
+      margin-bottom: 2px;
+      display: inline-block;
+      vertical-align: middle;
+      transition: filter 0.3s;
+    }
+    header .logo:hover {
+      filter: brightness(1.22) contrast(1.28) drop-shadow(0 0 8px #86BC25aa);
+    }
+    header .user-info {
+      text-align: right;
+      font-size: 1rem;
+      color: var(--text-secondary);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      letter-spacing: 0.01em;
+      opacity: 0.85;
+      transition: opacity 0.3s;
+    }
+    header .user-info:hover {
+      opacity: 1;
+    }
+    main {
+      max-width: 950px;
+      margin: 36px auto 0 auto;
+      padding: 0 20px 60px 20px;
+      animation: fadeInUp 0.77s cubic-bezier(.19,1,.22,1) 0.18s both;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(22px);}
+      to { opacity: 1; transform: none;}
+    }
+    h1.title {
+      color: var(--text-main);
+      margin-bottom: 18px;
+      border-bottom: 2.5px solid var(--deloitte-green);
+      display: inline-block;
+      padding-bottom: 6px;
+      font-size: 2.1rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      font-family: 'Segoe UI Semibold', Arial, sans-serif;
+      position: relative;
+      background: linear-gradient(90deg, #86bc25 48%, #6da025 78%);
+      background-size: 0 4px;
+      background-repeat: no-repeat;
+      background-position: left bottom;
+      transition: background-size 0.4s;
+      animation: underlineGrow 1.1s cubic-bezier(.44,.99,.22,1) 0.22s 1 forwards;
+    }
+    @keyframes underlineGrow {
+      from { background-size: 0 4px;}
+      to { background-size: 100% 4px;}
+    }
+    form.quiz-form {
+      margin-top: 28px;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none;
+      animation: fadeInUp 0.8s cubic-bezier(.19,1,.22,1) 0.13s both;
+    }
+    .quiz-form label {
+      font-weight: 500;
+      margin-bottom: 8px;
+      display: block;
+      color: var(--text-secondary);
+      font-size: 1rem;
+      letter-spacing: 0.01em;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeInLabel 0.45s cubic-bezier(.42,.99,.22,1) forwards;
+      animation-delay: calc(0.09s * var(--i, 1));
+    }
+    @keyframes fadeInLabel {
+      to { opacity: 1; transform: none;}
+    }
+    .quiz-form label:nth-child(1) { --i: 1; }
+    .quiz-form label:nth-child(2) { --i: 2; }
+    .quiz-form label:nth-child(3) { --i: 3; }
+    .quiz-form label:nth-child(4) { --i: 4; }
+    .quiz-form label:nth-child(5) { --i: 5; }
+    .quiz-form label:nth-child(6) { --i: 6; }
+    .quiz-form label:nth-child(7) { --i: 7; }
+    .quiz-form input,
+    .quiz-form select,
+    .quiz-form textarea {
+      padding: 9px 11px;
+      font-size: 1rem;
+      background: var(--input-bg);
+      color: var(--text-main);
+      border: 1px solid var(--input-border);
+      border-radius: 3px;
+      margin-bottom: 18px;
+      margin-right: 10px;
+      transition: border 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+      transition: box-shadow 0.2s, border-color 0.2s, background 0.22s;
+    }
+    .quiz-form input:focus,
+    .quiz-form select:focus,
+    .quiz-form textarea:focus {
+      border-color: var(--input-focus);
+      outline: none;
+      box-shadow: 0 0 0 2px #86BC25, 0 2px 6px 0 rgba(134,188,37,0.12);
+      background: #131415;
+    }
+    .quiz-form input::placeholder {
+      color: #bfc7cf;
+      opacity: 1;
+      transition: color 0.3s;
+    }
+    .quiz-form input:focus::placeholder {
+      color: #86BC25;
+      opacity: 0.7;
+    }
+    .quiz-form .form-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 6px;
+      margin-top: 8px;
+    }
+    .quiz-form button[type="submit"] {
+      display: inline-flex;
+      align-items: center;
+      background-color: var(--deloitte-green);
+      color: #fff;
+      border: none;
+      padding: 12px 26px;
+      font-size: 1.08rem;
+      font-weight: 600;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.13s, box-shadow 0.17s;
+      box-shadow: 0 2px 12px rgba(100,160,40,0.12);
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
+    .quiz-form button[type="submit"]:hover,
+    .quiz-form button[type="submit"]:focus {
+      background: #6da025;
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 4px 20px 0 rgba(134,188,37,0.13);
+    }
+    .quiz-form button[type="submit"]::after {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg,rgba(255,255,255,0.07) 0%,rgba(255,255,255,0.19) 100%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.32s;
+    }
+    .quiz-form button[type="submit"]:active::after {
+      opacity: 0.8;
+    }
+    #view-history-btn {
+      display: inline-block;
+      padding: 10px 26px;
+      font-size: 1.01rem;
+      font-weight: 600;
+      color: var(--deloitte-green);
+      background: transparent;
+      border: 2px solid var(--deloitte-green);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background 0.17s, color 0.17s, box-shadow 0.16s;
+      vertical-align: middle;
+      letter-spacing: 0.03em;
+      margin: 0;
+    }
+    #view-history-btn:hover, #view-history-btn:focus {
+      background: var(--deloitte-green);
+      color: #fff;
+      box-shadow: 0 2px 12px 0 rgba(134,188,37,0.13);
+    }
+    #ratio-info {
+      margin: 0.5em 0 1.2em 0;
+      font-weight: 500;
+      color: var(--deloitte-green);
+      letter-spacing: 0.01em;
+      font-size: 1.04rem;
+      transition: color 0.3s;
+      animation: fadeInInfo 0.46s cubic-bezier(.24,.99,.22,1) both;
+    }
+    @keyframes fadeInInfo {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .chart-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+    .chart-box {
+      background: #222325;
+      border-radius: 10px;
+      padding: 18px 26px 10px 26px;
+      box-shadow: 0 2px 15px 0 rgba(134,188,37,0.10);
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .chart-box canvas {
+      background: transparent;
+    }
+    section {
+      margin-top: 36px;
+      opacity: 0;
+      transform: translateY(22px);
+      animation: fadeInUp 0.7s cubic-bezier(.19,1,.22,1) forwards;
+      animation-delay: 0.25s;
+    }
+    section h2 {
+      font-size: 1.24rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+      border-bottom: 1.5px solid var(--divider);
+      padding-bottom: 5px;
+      color: var(--deloitte-green);
+      letter-spacing: 0.04em;
+      font-family: 'Segoe UI Semibold', Arial, sans-serif;
+      opacity: 0.9;
+      transition: color 0.2s;
+    }
+    .quiz-q {
+      margin-bottom: 1.4em;
+      padding-bottom: 1em;
+      border-bottom: 1px solid var(--divider);
+      background: transparent;
+      opacity: 0;
+      animation: fadeInQuizQ 0.5s cubic-bezier(.19,1,.22,1) forwards;
+      animation-delay: 0.17s;
+    }
+    @keyframes fadeInQuizQ {
+      to { opacity: 1;}
+    }
+    .quiz-q b {
+      color: var(--deloitte-green);
+      font-size: 1.03rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .quiz-q label {
+      font-weight: 400;
+      margin-right: 14px;
+      display: inline-block;
+      color: var(--text-main);
+      font-size: 1rem;
+      letter-spacing: 0.01em;
+      transition: color 0.2s;
+    }
+    .quiz-q textarea {
+      width: 97%;
+      min-height: 64px;
+      background: var(--input-bg);
+      color: var(--text-main);
+      font-size: 1rem;
+      transition: box-shadow 0.2s;
+    }
+    .quiz-q textarea:focus {
+      box-shadow: 0 0 0 2px #86BC25;
+    }
+    .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(134,188,37,0.17);
+      border-top: 3px solid #86BC25;
+      border-radius: 50%;
+      animation: spin 0.68s linear infinite;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-bar-container {
+      background: #23272A;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 18px 0;
+      height: 16px;
+      width: 100%;
+      box-shadow: 0 1px 7px 0 rgba(134,188,37,0.11);
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #86BC25 60%, #b0e84a 100%);
+      width: 0;
+      transition: width 0.6s cubic-bezier(.4,1,.22,1);
+    }
+    #quiz-feedback, #quiz-stats, #quiz-history {
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 0 0 0 0;
+      margin-top: 20px;
+      box-shadow: none;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      opacity: 0;
+      animation: fadeInUp 0.65s cubic-bezier(.19,1,.22,1) 0.2s forwards;
+    }
+    #quiz-feedback h3, #quiz-stats h3, #quiz-history h3 {
+      color: var(--deloitte-green);
+      border-bottom: 1.5px solid var(--divider);
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+      font-family: 'Segoe UI Semibold', Arial, sans-serif;
+    }
+    .attempt-header {
+      background: #202123;
+      padding: 0.3em 0.8em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+      border-radius: 2px;
+      border-left: 4px solid var(--deloitte-green);
+      color: var(--text-main);
+      animation: fadeInInfo 0.38s cubic-bezier(.24,.99,.22,1) 0.11s both;
+    }
+    .attempt-list {
+      list-style: none;
+      padding: 0;
+      margin-bottom: 0;
+    }
+    .attempt-list li {
+      margin: 0.5em 0;
+      padding: 7px 12px 7px 0;
+      border-radius: 2px;
+      border-left: 4px solid transparent;
+      transition: background 0.15s, box-shadow 0.15s, border-color 0.18s;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+    }
+    .attempt-list li:hover {
+      background: #23272A;
+      box-shadow: 0 2px 11px 0 rgba(134,188,37,0.07);
+      border-left: 4px solid #b0e84a;
+    }
+    .attempt-link {
+      cursor:pointer;
+      color: var(--deloitte-green);
+      text-decoration: underline;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 1.01rem;
+      transition: color 0.18s;
+    }
+    .attempt-link:hover { color: #b0e84a; }
+    .selected-attempt {
+      background: #202e18;
+      border-left: 4px solid var(--deloitte-green);
+      animation: correctFlash 1s ease;
+    }
+    @keyframes correctFlash {
+      0% { background: #23272A; }
+      30% { background: #3c6e13; }
+      100% { background: #202e18; }
+    }
+    .quiz-form input[type="number"] {
+      width: 74px;
+      font-size: 1rem;
+    }
+    .correct-anim {
+      animation: correctFlash 1s ease;
+    }
+    .incorrect-anim {
+      animation: incorrectFlash 1s ease;
+    }
+    @keyframes incorrectFlash {
+      0% { background: #23272A; }
+      30% { background: #7d2626; }
+      100% { background: #23272A; }
+    }
+    #quiz-feedback ol, #quiz-stats ul {
+      margin-left: 1.2em;
+      margin-bottom: 0.7em;
+      color: var(--text-secondary);
+      font-size: 1.01rem;
+    }
+    #quiz-feedback li b, #quiz-history li b {
+      color: var(--deloitte-green);
+      font-weight: 600;
+    }
+    @media (max-width: 700px) {
+      main { padding: 0 4px; }
+      .quiz-form label { min-width: 90px; }
+      h1.title { font-size: 1.15rem; }
+      section h2 { font-size: 1.01rem; }
+      .quiz-form .form-actions { flex-direction: column; align-items: stretch; gap: 4px; }
+      #view-history-btn { margin-left: 0; width: 100%; }
+      .chart-container { flex-direction: column; gap: 10px; }
+      .chart-box { width: 100%; }
+    }
   </style>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <h1>Take a Quiz</h1>
-  <form id="quizStartForm" class="quiz-form">
-    <label>Topic: <input type="text" id="quiz_topic" value="Python"></label>
-    <label>Difficulty:
-      <select id="quiz_difficulty">
-        <option value="">Any</option>
-        <option value="novice">Novice</option>
-        <option value="beginner" selected>Beginner</option>
-        <option value="intermediate">Intermediate</option>
-        <option value="advanced">Advanced</option>
-      </select>
-    </label>
-    <label>Skill Type:
-      <select id="quiz_skill_type">
-        <option value="">Any</option>
-        <option value="technical" selected>Technical</option>
-        <option value="soft_skill">Soft Skill</option>
-      </select>
-    </label>
-    <label>Managerial Level:
-      <select id="quiz_managerial_level">
-        <option value="">Any</option>
-        <option value="junior">Junior</option>
-        <option value="manager">Manager</option>
-        <option value="senior">Senior</option>
-      </select>
-    </label>
-    <label>Question Type:
-      <select id="quiz_question_type">
-        <option value="">Any</option>
-        <option value="mcq">MCQ</option>
-        <option value="subjective">Subjective</option>
-      </select>
-    </label>
-    <label>How many? <input type="number" id="quiz_num_questions" min="1" max="10" value="5"></label>
-    <label>User ID: <input type="text" id="quiz_user_id" value="user1"></label>
-    <button type="submit">Start Quiz</button>
-  </form>
-  <div id="ratio-info"></div>
-  <div id="quiz-section"></div>
-  <div id="quiz-feedback"></div>
-  <div id="quiz-stats"></div>
-  <div id="quiz-history"></div>
-
+  <header>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2b/DeloitteNewSmall.png" alt="Deloitte logo" class="logo">
+    <div class="user-info">
+      <div>User: pac-man-01</div>
+      <div>2025-06-09 08:56:54 UTC</div>
+    </div>
+  </header>
+  <main>
+    <h1 class="title">Quiz Portal</h1>
+    <form id="quizStartForm" class="quiz-form">
+      <label>Topic
+        <input type="text" id="quiz_topic" value="Python" placeholder="e.g. Python, Cloud, Tax, etc.">
+      </label>
+      <label>Difficulty
+        <select id="quiz_difficulty">
+          <option value="">Any</option>
+          <option value="novice">Novice</option>
+          <option value="beginner" selected>Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </label>
+      <label>Skill Type
+        <select id="quiz_skill_type">
+          <option value="">Any</option>
+          <option value="technical" selected>Technical</option>
+          <option value="soft_skill">Soft Skill</option>
+        </select>
+      </label>
+      <label>Managerial Level
+        <select id="quiz_managerial_level">
+          <option value="">Any</option>
+          <option value="junior">Junior</option>
+          <option value="manager">Manager</option>
+          <option value="senior">Senior</option>
+        </select>
+      </label>
+      <label>Question Type
+        <select id="quiz_question_type">
+          <option value="">Any</option>
+          <option value="mcq">MCQ</option>
+          <option value="subjective">Subjective</option>
+        </select>
+      </label>
+      <label>Number of Questions
+        <input type="number" id="quiz_num_questions" min="1" max="10" value="5">
+      </label>
+      <label>User ID
+        <input type="text" id="quiz_user_id" value="pac-man-01">
+      </label>
+      <div class="form-actions">
+        <button type="submit">Start Quiz</button>
+        <button type="button" id="view-history-btn" title="View your quiz attempts history">View Quiz History</button>
+      </div>
+    </form>
+    <div id="ratio-info"></div>
+    <section>
+      <h2>Quiz</h2>
+      <div id="quiz-section"></div>
+    </section>
+    <section>
+      <h2>Feedback</h2>
+      <div id="quiz-feedback"></div>
+    </section>
+    <section>
+      <h2>Statistics</h2>
+      <div id="quiz-stats">
+        <div class="chart-container">
+          <div class="chart-box">
+            <canvas id="scorePieChart" width="200" height="200"></canvas>
+            <div style="font-size:1rem;color:var(--text-secondary);margin-top:6px;">MCQ Accuracy vs Subjective Avg</div>
+          </div>
+          <div class="chart-box">
+            <canvas id="performanceBarChart" width="350" height="200"></canvas>
+            <div style="font-size:1rem;color:var(--text-secondary);margin-top:6px;">Recent Scores</div>
+          </div>
+        </div>
+        <div id="stats-list"></div>
+      </div>
+    </section>
+    <section>
+      <h2>History</h2>
+      <div id="quiz-history"></div>
+    </section>
+  </main>
 <script>
 const backendUrl = ""; // If running on same domain/port, leave empty
 
 let quizQuestions = [];
-let quizUserId = "";
+let quizUserId = "pac-man-01";
 let currentAttemptId = null;
+let scorePieChart = null, performanceBarChart = null;
 
-// --- Managerial Ratio UI logic ---
 async function updateRatioInfo() {
   const managerialLevel = document.getElementById("quiz_managerial_level").value.trim();
   const numQuestions = parseInt(document.getElementById("quiz_num_questions").value, 10) || 5;
@@ -100,9 +570,9 @@ updateRatioInfo();
 
 document.getElementById("quizStartForm").onsubmit = async function(e) {
   e.preventDefault();
-  document.getElementById("quiz-section").innerHTML = "Loading quiz...";
+  document.getElementById("quiz-section").innerHTML = `<span class="spinner"></span> Loading quiz...`;
   document.getElementById("quiz-feedback").innerHTML = "";
-  document.getElementById("quiz-stats").innerHTML = "";
+  document.getElementById("quiz-stats").style.opacity = 0; // hide stats while quiz is loading
   quizUserId = document.getElementById("quiz_user_id").value.trim();
   currentAttemptId = null;
   const req = {
@@ -114,25 +584,8 @@ document.getElementById("quizStartForm").onsubmit = async function(e) {
     num_questions: parseInt(document.getElementById("quiz_num_questions").value, 10),
     user_id: quizUserId
   };
+  // Only fetch questions, do not create quiz attempt here!
   try {
-    // 1. Create quiz attempt
-    const attemptResp = await fetch(`${backendUrl}/quiz/attempt/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: quizUserId,
-        topic: req.topic,
-        difficulty: req.difficulty,
-        skill_type: req.skill_type,
-        managerial_level: req.managerial_level,
-        num_questions: req.num_questions
-      })
-    });
-    const attempt = await attemptResp.json();
-    if (!attempt.id) throw new Error("Couldn't create quiz attempt.");
-    currentAttemptId = attempt.id;
-
-    // 2. Get questions
     const resp = await fetch(`${backendUrl}/quiz/start/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -141,30 +594,60 @@ document.getElementById("quizStartForm").onsubmit = async function(e) {
     quizQuestions = await resp.json();
     if (!Array.isArray(quizQuestions) || quizQuestions.length === 0) {
       document.getElementById("quiz-section").innerHTML = "No questions found for this quiz.";
+      document.getElementById("quiz-stats").style.opacity = 1;
       return;
     }
     renderQuizForm(quizQuestions);
   } catch (err) {
     document.getElementById("quiz-section").innerHTML = "Error loading quiz: " + err;
+    document.getElementById("quiz-stats").style.opacity = 1;
   }
 };
 
 function renderQuizForm(questions) {
   let html = `<form id="answerQuizForm">`;
+  html += `<div class="progress-bar-container"><div class="progress-bar" id="quiz-progress"></div></div>`;
   questions.forEach((q, idx) => {
-    html += `<div class="quiz-q"><b>Q${idx+1}:</b> ${q.question_text}<br>`;
+    html += `<div class="quiz-q" style="animation-delay:${0.12 + idx*0.08}s;">
+      <b>Q${idx+1}:</b> ${q.question_text}<br>`;
     if (q.type === "mcq" && q.options && q.options.length) {
-      q.options.forEach((opt, oidx) => {
+      q.options.forEach(opt => {
         html += `<label><input type="radio" name="q_${q.id}" value="${opt.replace(/"/g,'&quot;')}" required> ${opt}</label><br>`;
       });
     } else if (q.type === "subjective") {
-      html += `<textarea name="q_${q.id}" rows="3" style="width:95%;" required placeholder="Your answer"></textarea>`;
+      html += `<textarea name="q_${q.id}" rows="3" required placeholder="Your answer"></textarea>`;
     }
     html += `</div>`;
   });
-  html += `<button type="submit">Submit Answers & Get Results</button></form>`;
+  html += `<button type="submit" style="background-color:#86BC25;color:#fff;border:none;padding:11px 24px;font-size:1.06rem;border-radius:3px;cursor:pointer;">Submit Answers & Get Results</button></form>`;
   document.getElementById("quiz-section").innerHTML = html;
   document.getElementById("answerQuizForm").onsubmit = submitQuizAnswers;
+
+  setProgress(0);
+
+  document.querySelectorAll(".quiz-q").forEach((el, idx) => {
+    el.style.opacity = 0;
+    setTimeout(() => { el.style.opacity = 1; }, 180 + idx*80);
+  });
+
+  const total = questions.length;
+  document.querySelectorAll('input[type=radio], textarea').forEach(el => {
+    el.addEventListener('change', function() {
+      let answered = 0;
+      questions.forEach(q => {
+        if (q.type === "mcq") {
+          if ([...document.querySelectorAll(`input[name="q_${q.id}"]`)].some(r => r.checked)) answered++;
+        } else if (q.type === "subjective") {
+          if ((document.querySelector(`textarea[name="q_${q.id}"]`)||{}).value?.trim()) answered++;
+        }
+      });
+      setProgress(100 * answered / total);
+    });
+  });
+}
+
+function setProgress(percent) {
+  document.getElementById('quiz-progress').style.width = percent + '%';
 }
 
 async function submitQuizAnswers(e) {
@@ -175,12 +658,12 @@ async function submitQuizAnswers(e) {
     user_answer: formData.get("q_" + q.id),
     user_id: quizUserId || undefined
   }));
-  document.getElementById("quiz-feedback").innerHTML = "Evaluating...";
+  document.getElementById("quiz-feedback").innerHTML = `<span class="spinner"></span> Evaluating...`;
   try {
     const resp = await fetch(`${backendUrl}/quiz/evaluate/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answers, quiz_attempt_id: currentAttemptId })
+      body: JSON.stringify({ answers })
     });
     const data = await resp.json();
     if (data.detail) throw new Error(data.detail);
@@ -197,11 +680,11 @@ function renderQuizFeedback(data) {
   html += `<b>Score:</b> ${data.total_score} / ${data.total_questions} (${data.percentage_score.toFixed(1)}%)<br>`;
   html += `<ol>`;
   data.evaluations.forEach(evalItem => {
-    html += `<li>
+    html += `<li class="${evalItem.is_correct ? "correct-anim" : "incorrect-anim"}">
       <b>Q:</b> ${evalItem.question_text}<br>
       <b>Your Answer:</b> ${evalItem.user_answer}<br>
       <b>Score:</b> ${(evalItem.score*100).toFixed(1)}%<br>
-      <b>${evalItem.is_correct ? "<span style='color:green'>Correct</span>" : "<span style='color:red'>Incorrect</span>"}</b><br>
+      <b>${evalItem.is_correct ? "<span style='color:var(--deloitte-green)'>Correct</span>" : "<span style='color:#ff5555'>Incorrect</span>"}</b><br>
       <b>Feedback:</b> ${evalItem.feedback || "n/a"}<br>
     </li>`;
   });
@@ -209,34 +692,78 @@ function renderQuizFeedback(data) {
   document.getElementById("quiz-feedback").innerHTML = html;
 }
 
-// --- Statistics UI ---
 async function fetchAndRenderStats(userId) {
   if (!userId) return;
-  document.getElementById("quiz-stats").innerHTML = "Loading stats...";
+  document.getElementById("quiz-stats").style.opacity = 0.5;
   try {
     const resp = await fetch(`${backendUrl}/stats/user/${encodeURIComponent(userId)}`);
     const stats = await resp.json();
     if (stats.detail) throw new Error(stats.detail);
+
     let html = `<h3>Your Quiz Statistics</h3>
       <ul>
-        <li>Total Attempted: ${stats.total_questions_attempted}</li>
-        <li>Overall Average Score: ${(stats.overall_percentage).toFixed(1)}%</li>
-        <li>MCQ Accuracy: ${(stats.mcq_accuracy).toFixed(1)}%</li>
-        <li>Subjective Average: ${(stats.subjective_percentage).toFixed(1)}%</li>
-        <li>Recent Performance (last 10): ${(stats.recent_performance).toFixed(1)}%</li>
+        <li>Total Attempted: <span id="counter-attempted">${stats.total_questions_attempted}</span></li>
+        <li>Overall Average Score: ${Number(stats.overall_percentage).toFixed(1)}%</li>
+        <li>MCQ Accuracy: ${Number(stats.mcq_accuracy).toFixed(1)}%</li>
+        <li>Subjective Average: ${Number(stats.subjective_percentage).toFixed(1)}%</li>
+        <li>Recent Performance (last 10): ${Number(stats.recent_performance).toFixed(1)}%</li>
         <li>First Attempt: ${new Date(stats.first_attempt).toLocaleString()}</li>
         <li>Last Attempt: ${new Date(stats.last_attempt).toLocaleString()}</li>
       </ul>`;
-    document.getElementById("quiz-stats").innerHTML = html;
+    document.getElementById("stats-list").innerHTML = html;
+
+    if (scorePieChart) scorePieChart.destroy();
+    scorePieChart = new Chart(document.getElementById('scorePieChart').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['MCQ Accuracy', 'Subjective Avg'],
+        datasets: [{
+          data: [
+            Number(stats.mcq_accuracy).toFixed(1),
+            Number(stats.subjective_percentage).toFixed(1)
+          ],
+          backgroundColor: ['#86BC25', '#6da025']
+        }]
+      },
+      options: {
+        plugins: { legend: {display: true}, tooltip: {enabled: true} },
+        cutout: '70%',
+        animation: { animateRotate: true, animateScale: true }
+      }
+    });
+
+    let recentScores = stats.recent_scores || [];
+    if (!Array.isArray(recentScores) || recentScores.length === 0) {
+      recentScores = Array(10).fill(Number(stats.recent_performance).toFixed(1));
+    }
+    if (performanceBarChart) performanceBarChart.destroy();
+    performanceBarChart = new Chart(document.getElementById('performanceBarChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: recentScores.map((s,i) => `#${i+1}`),
+        datasets: [{
+          label: 'Recent Scores',
+          data: recentScores,
+          backgroundColor: '#86BC25'
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: {duration: 900, easing: 'easeOutBounce'},
+        scales: { y: { beginAtZero: true, max: 100 }}
+      }
+    });
+
+    document.getElementById("quiz-stats").style.opacity = 1;
   } catch (err) {
-    document.getElementById("quiz-stats").innerHTML = "Error loading stats: " + err;
+    document.getElementById("stats-list").innerHTML = "Error loading stats: " + err;
+    document.getElementById("quiz-stats").style.opacity = 1;
   }
 }
 
-// --- Quiz History UI ---
 async function fetchAndRenderHistory(userId, highlightAttemptId=null) {
   if (!userId) return;
-  document.getElementById("quiz-history").innerHTML = "Loading your quiz history...";
+  document.getElementById("quiz-history").innerHTML = `<span class="spinner"></span> Loading your quiz history...`;
   try {
     const resp = await fetch(`${backendUrl}/quiz/attempts/${encodeURIComponent(userId)}`);
     const data = await resp.json();
@@ -248,30 +775,27 @@ async function fetchAndRenderHistory(userId, highlightAttemptId=null) {
     data.forEach((attempt, idx) => {
       html += `<li${highlightAttemptId && attempt.id === highlightAttemptId ? ' class="selected-attempt"' : ''}>
         <span class="attempt-link" onclick="showQuizAttempt(${attempt.id}, this)">${attempt.id === highlightAttemptId ? "<b>Attempt #" : "Attempt #"}${data.length-idx}${attempt.id === highlightAttemptId ? "</b>" : ""}</span>
-        <span style="color:#666"> (${new Date(attempt.started_at).toLocaleString()})</span>
-        ${typeof attempt.score === "number" ? `<span style="color:#197d41;">Score: ${attempt.score}</span>` : ""}
+        <span style="color:var(--text-secondary)"> (${new Date(attempt.started_at).toLocaleString()})</span>
+        ${typeof attempt.score === "number" ? `<span style="color:var(--deloitte-green);">Score: ${attempt.score}</span>` : ""}
       </li>`;
     });
     html += `</ul>
       <div id="selected-attempt-detail"></div>
     `;
     document.getElementById("quiz-history").innerHTML = html;
-    // If just submitted, show that attempt
     if (highlightAttemptId) showQuizAttempt(highlightAttemptId);
   } catch (err) {
     document.getElementById("quiz-history").innerHTML = "Error loading history: " + err;
   }
 }
 
-// Show attempt details
 window.showQuizAttempt = async function(attemptId, elem) {
   if (elem) {
-    // Mark as selected
     document.querySelectorAll('.attempt-list li').forEach(li => li.classList.remove('selected-attempt'));
     elem.parentElement.classList.add('selected-attempt');
   }
   const detailDiv = document.getElementById("selected-attempt-detail");
-  detailDiv.innerHTML = "Loading attempt details...";
+  detailDiv.innerHTML = `<span class="spinner"></span> Loading attempt details...`;
   try {
     const resp = await fetch(`${backendUrl}/quiz/attempt/${attemptId}/evaluations`);
     const evals = await resp.json();
@@ -282,11 +806,11 @@ window.showQuizAttempt = async function(attemptId, elem) {
     let html = `<div class="attempt-header">Attempt #${attemptId} (${new Date(evals[0].created_at || Date.now()).toLocaleString()})</div>`;
     html += `<ol>`;
     evals.forEach(evalItem => {
-      html += `<li>
+      html += `<li class="${evalItem.is_correct ? "correct-anim" : "incorrect-anim"}">
         <b>Q:</b> ${evalItem.question_text}<br>
         <b>Your Answer:</b> ${evalItem.user_answer}<br>
         <b>Score:</b> ${(evalItem.score*100).toFixed(1)}%<br>
-        <b>${evalItem.is_correct ? "<span style='color:green'>Correct</span>" : "<span style='color:red'>Incorrect</span>"}</b><br>
+        <b>${evalItem.is_correct ? "<span style='color:var(--deloitte-green)'>Correct</span>" : "<span style='color:#ff5555'>Incorrect</span>"}</b><br>
         <b>Feedback:</b> ${evalItem.feedback || "n/a"}<br>
       </li>`;
     });
@@ -297,14 +821,29 @@ window.showQuizAttempt = async function(attemptId, elem) {
   }
 }
 
-// On page load, load history if a user is set
 window.addEventListener("DOMContentLoaded", function(){
   quizUserId = document.getElementById("quiz_user_id").value.trim();
-  if (quizUserId) fetchAndRenderHistory(quizUserId);
+  if (quizUserId) {
+    fetchAndRenderHistory(quizUserId);
+    fetchAndRenderStats(quizUserId);
+  }
 });
 document.getElementById("quiz_user_id").addEventListener("change", function(){
   quizUserId = this.value.trim();
-  if (quizUserId) fetchAndRenderHistory(quizUserId);
+  if (quizUserId) {
+    fetchAndRenderHistory(quizUserId);
+    fetchAndRenderStats(quizUserId);
+  }
+});
+
+document.getElementById("view-history-btn").addEventListener("click", function() {
+  let userId = document.getElementById("quiz_user_id").value.trim();
+  if (!userId) {
+    alert("Please enter your User ID to view history.");
+    return;
+  }
+  fetchAndRenderHistory(userId);
+  fetchAndRenderStats(userId);
 });
 </script>
 </body>
