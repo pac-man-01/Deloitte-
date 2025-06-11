@@ -2,104 +2,520 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Quiz Generator Frontend</title>
+  <title>Deloitte Quiz Generator</title>
   <style>
-    body { font-family: sans-serif; margin: 2em; }
-    input, select, button { margin: 0.3em 0.5em 0.3em 0; }
-    #result, #db-questions { background: #fafafa; border: 1px solid #ccc; padding: 1em; margin-top: 1em; }
-    .mcq { color: #2b7a78; }
-    .subjective { color: #b83b5e; }
+    :root {
+      --deloitte-green: #86BC25;
+      --deloitte-dark: #18191A;
+      --deloitte-mid: #23272a;
+      --deloitte-card: #222325;
+      --text-main: #F5F6FA;
+      --text-secondary: #BFC7CF;
+      --input-bg: #181A1B;
+      --input-border: #353535;
+      --input-focus: #86BC25;
+      --card-shadow: rgba(0,0,0,0.17);
+    }
+    body {
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      background-color: var(--deloitte-dark);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      font-size: 17px;
+      line-height: 1.6;
+      opacity: 0;
+      animation: bodyFadeIn 0.7s cubic-bezier(.19,1,.22,1) forwards;
+    }
+    @keyframes bodyFadeIn {
+      to { opacity: 1; }
+    }
+    header {
+      background-color: var(--deloitte-mid);
+      padding: 18px 28px 12px 28px;
+      border-bottom: 2px solid var(--deloitte-green);
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      opacity: 0;
+      transform: translateY(-16px);
+      animation: fadeInDown 0.7s cubic-bezier(.19,1,.22,1) 0.1s forwards;
+    }
+    @keyframes fadeInDown {
+      to { opacity: 1; transform: none; }
+    }
+    header .logo {
+      height: 42px;
+      background: transparent;
+      filter: brightness(1.1) contrast(1.15);
+      margin-bottom: 2px;
+      display: inline-block;
+      vertical-align: middle;
+      transition: filter 0.3s;
+    }
+    header .logo:hover {
+      filter: brightness(1.22) contrast(1.28) drop-shadow(0 0 8px #86BC25aa);
+    }
+    main {
+      max-width: 950px;
+      margin: 36px auto 0 auto;
+      padding: 0 20px 60px 20px;
+      animation: fadeInUp 0.77s cubic-bezier(.19,1,.22,1) 0.18s both;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(22px);}
+      to { opacity: 1; transform: none;}
+    }
+    h1.title {
+      position: relative;
+      display: inline-block;
+      color: var(--text-main);
+      margin-bottom: 14px;
+      padding-bottom: 4px;
+      font-size: 2.1rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      font-family: 'Segoe UI Semibold', 'Arial', sans-serif;
+    }
+    h1.title::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      height: 4px;
+      width: 100%;
+      background: linear-gradient(90deg, #86bc25 48%, #6da025 78%);
+      border-radius: 2px;
+      transform: scaleX(0);
+      transform-origin: left;
+      animation: underlineGrowBar 1.1s cubic-bezier(.44,.99,.22,1) 0.22s forwards;
+    }
+    @keyframes underlineGrowBar {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    form {
+      margin-top: 30px;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      animation: fadeInUp 0.8s cubic-bezier(.19,1,.22,1) 0.13s both;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 8px;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeInLabel 0.45s cubic-bezier(.42,.99,.22,1) forwards;
+      animation-delay: calc(0.09s * var(--i, 1));
+    }
+    @keyframes fadeInLabel {
+      to { opacity: 1; transform: none;}
+    }
+    .form-field:nth-child(1) { --i: 1; }
+    .form-field:nth-child(2) { --i: 2; }
+    .form-field:nth-child(3) { --i: 3; }
+    .form-field:nth-child(4) { --i: 4; }
+    .form-field:nth-child(5) { --i: 5; }
+    .form-field:nth-child(6) { --i: 6; }
+    .form-field label {
+      font-weight: 500;
+      margin-bottom: 5px;
+      color: var(--text-secondary);
+      font-size: 1rem;
+      letter-spacing: 0.01em;
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      transition: color 0.2s;
+    }
+    .form-field input,
+    .form-field select {
+      padding: 9px 11px;
+      font-size: 1rem;
+      background: var(--input-bg);
+      color: var(--text-main);
+      border: 1px solid var(--input-border);
+      border-radius: 3px;
+      margin-bottom: 2px;
+      transition: border 0.2s, box-shadow 0.2s, background 0.22s;
+      font-family: inherit;
+    }
+    .form-field input:focus,
+    .form-field select:focus {
+      border-color: var(--input-focus);
+      outline: none;
+      box-shadow: 0 0 0 2px #86BC25, 0 2px 6px 0 rgba(134,188,37,0.09);
+      background: #131415;
+    }
+    .form-field input::placeholder {
+      color: #bfc7cf;
+      opacity: 1;
+      transition: color 0.3s;
+    }
+    .form-field input:focus::placeholder {
+      color: #86BC25;
+      opacity: 0.7;
+    }
+    #generateBtn {
+      display: inline-flex;
+      align-items: center;
+      background-color: var(--deloitte-green);
+      color: #fff;
+      border: none;
+      padding: 12px 28px;
+      font-size: 1.08rem;
+      font-weight: 500;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: background 0.2s, transform 0.13s, box-shadow 0.17s;
+      box-shadow: 0 1px 7px rgba(100,160,40,0.09);
+      letter-spacing: 0.2px;
+      position: relative;
+      overflow: hidden;
+    }
+    #generateBtn:hover, #generateBtn:focus {
+      background: #6da025;
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 4px 20px 0 rgba(134,188,37,0.13);
+    }
+    #generateBtn:active::after {
+      opacity: 0.8;
+    }
+    #generateBtn::after {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg,rgba(255,255,255,0.07) 0%,rgba(255,255,255,0.19) 100%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.32s;
+    }
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top: 2px solid #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 8px;
+    }
+    .hidden { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    section {
+      margin-top: 38px;
+      opacity: 0;
+      transform: translateY(22px);
+      animation: fadeInUp 0.7s cubic-bezier(.19,1,.22,1) forwards;
+      animation-delay: 0.25s;
+    }
+    section h2 {
+      font-size: 1.24rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+      border-bottom: 1.5px solid #242526;
+      padding-bottom: 5px;
+      color: var(--deloitte-green);
+      letter-spacing: 0.04em;
+      font-family: 'Segoe UI Semibold', 'Arial', sans-serif;
+      opacity: 0.9;
+      transition: color 0.2s;
+    }
+
+    /* --- Question List Appearance --- */
+    .question-list {
+      padding: 0;
+      margin: 0 0 0 0;
+      list-style: none;
+    }
+    .question-list li {
+      margin-bottom: 30px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid #23272a;
+      background: transparent;
+      opacity: 0;
+      transform: translateY(18px);
+      animation: fadeInQuizQ 0.5s cubic-bezier(.19,1,.22,1) forwards;
+    }
+    @keyframes fadeInQuizQ {
+      to { opacity: 1; transform: none;}
+    }
+    .question-type {
+      color: var(--deloitte-green);
+      font-weight: 600;
+      font-size: 1.01rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+      letter-spacing: 0.06em;
+      font-family: 'Segoe UI Semibold', 'Arial', sans-serif;
+      opacity: 0.93;
+      animation: fadeInInfo 0.46s cubic-bezier(.24,.99,.22,1) both;
+    }
+    @keyframes fadeInInfo {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .question-text {
+      font-size: 1.08rem;
+      color: var(--text-main);
+      margin-bottom: 7px;
+      font-weight: 500;
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      transition: color 0.2s;
+    }
+    .options-list {
+      margin: 5px 0 7px 20px;
+      color: var(--text-secondary);
+      padding: 0;
+      font-size: 1rem;
+      opacity: 0.89;
+      animation: fadeInInfo 0.28s 0.1s both;
+    }
+    .options-list li {
+      margin-bottom: 2px;
+      transition: color 0.18s;
+    }
+    .options-list li:hover {
+      color: var(--deloitte-green);
+    }
+    .answer-label {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      margin-top: 2px;
+      font-weight: 400;
+      opacity: 0.93;
+      animation: fadeInInfo 0.36s cubic-bezier(.24,.99,.22,1) 0.13s both;
+    }
+    .answer-value {
+      color: #fff;
+      font-weight: 500;
+      margin-left: 5px;
+      font-size: 1.01rem;
+      transition: color 0.18s;
+    }
+    .answer-value.correct-anim {
+      animation: correctFlash 1s cubic-bezier(.7,.01,.22,1);
+      color: var(--deloitte-green);
+    }
+    @keyframes correctFlash {
+      0% { color: #fff; }
+      18% { color: #6da025; }
+      100% { color: var(--deloitte-green); }
+    }
+    /* Button in All Questions section */
+    #allQuestions button {
+      background: var(--deloitte-green);
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 8px 18px;
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 12px;
+      margin-top: 3px;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.13s;
+      letter-spacing: 0.09em;
+      position: relative;
+      overflow: hidden;
+    }
+    #allQuestions button:hover, #allQuestions button:focus {
+      background: #6da025;
+      transform: translateY(-2px) scale(1.02);
+    }
+    ::-webkit-scrollbar {
+      width: 10px;
+      background: #202122;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 5px;
+    }
+    ::selection {
+      background: #86BC25;
+      color: #fff;
+    }
+    @media (max-width: 700px) {
+      main { padding: 0 4px; }
+      .form-grid { gap: 13px; }
+      h1.title { font-size: 1.15rem; }
+      section h2 { font-size: 1.01rem; }
+    }
   </style>
 </head>
 <body>
-  <h1>Generate Quiz Questions</h1>
-  <form id="genForm">
-    <label>Topic: <input type="text" id="topic" value="Python"></label>
-    <label>Difficulty:
-      <select id="difficulty">
-        <option value="novice">Novice</option>
-        <option value="beginner" selected>Beginner</option>
-        <option value="intermediate">Intermediate</option>
-        <option value="advanced">Advanced</option>
-      </select>
-    </label>
-    <label>Skill Type:
-      <select id="skill_type">
-        <option value="technical" selected>Technical</option>
-        <option value="soft_skill">Soft Skill</option>
-      </select>
-    </label>
-    <label>Managerial Level: <input type="text" id="managerial_level" placeholder="Optional"></label>
-    <label>Question Type:
-      <select id="question_type">
-        <option value="mcq" selected>MCQ</option>
-        <option value="subjective">Subjective</option>
-      </select>
-    </label>
-    <label>How many? <input type="number" id="num_questions" min="1" max="10" value="5"></label>
-    <button type="submit">Generate & Store</button>
-  </form>
+  <header>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2b/DeloitteNewSmall.png" alt="Deloitte Logo" class="logo">
+    <span style="font-size:1.09rem;font-weight:400;letter-spacing:0.05em;color:#bfc7cf;font-family:'Segoe UI', Arial, sans-serif;">Deloitte Quiz Generator</span>
+  </header>
+  <main>
+    <h1 class="title">Quiz Generator</h1>
+    <form id="quizForm">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="topic">Topic or Keywords</label>
+          <input type="text" id="topic" name="topic" placeholder="e.g. Python, Tax, etc.">
+        </div>
+        <div class="form-field">
+          <label for="difficulty">Difficulty</label>
+          <select id="difficulty" name="difficulty">
+            <option value="novice">Novice</option>
+            <option value="beginner" selected>Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="skill_type">Skill Type</label>
+          <select id="skill_type" name="skill_type">
+            <option value="technical" selected>Technical</option>
+            <option value="soft_skill">Soft Skill</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="managerial_level">Managerial Level</label>
+          <input type="text" id="managerial_level" name="managerial_level" placeholder="Optional">
+        </div>
+        <div class="form-field">
+          <label for="question_type">Question Type</label>
+          <select id="question_type" name="question_type">
+            <option value="mcq" selected>MCQ</option>
+            <option value="subjective">Subjective</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="num_questions">Number of Questions</label>
+          <input type="number" id="num_questions" name="num_questions" min="1" max="10" value="5">
+        </div>
+      </div>
+      <button type="button" id="generateBtn"><span class="spinner hidden"></span><span class="btn-text">Generate Questions</span></button>
+    </form>
 
-  <div id="result"></div>
-  <hr>
-  <h2>Questions in Database</h2>
-  <button onclick="fetchDBQuestions()">Refresh DB Questions</button>
-  <div id="db-questions"></div>
+    <section id="generatedQuestions">
+      <h2>Generated Questions</h2>
+      <ul class="question-list" id="generatedContainer"></ul>
+    </section>
 
-<script>
-const backendUrl = ""; // if running on same domain/port, leave empty
+    <section id="allQuestions">
+      <h2>All Questions</h2>
+      <button onclick="fetchDBQuestions()">Refresh</button>
+      <ul class="question-list" id="databaseContainer"></ul>
+    </section>
+  </main>
 
-document.getElementById("genForm").onsubmit = async function(e){
-  e.preventDefault();
-  const req = {
-    topic: document.getElementById("topic").value,
-    difficulty: document.getElementById("difficulty").value,
-    skill_type: document.getElementById("skill_type").value,
-    managerial_level: document.getElementById("managerial_level").value || null,
-    num_questions: parseInt(document.getElementById("num_questions").value, 10),
-    question_type: document.getElementById("question_type").value
-  };
-  document.getElementById("result").innerHTML = "Generating, please wait...";
-  try {
-    const resp = await fetch(`${backendUrl}/generate_questions_batch/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req)
+  <script>
+    const backendUrl = ""; // Leave empty if frontend and backend are on the same domain
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('generateBtn').addEventListener('click', generateQuestions);
+      fetchDBQuestions();
     });
-    const data = await resp.json();
-    if (!Array.isArray(data)) throw new Error(data.detail || "Unexpected response");
-    document.getElementById("result").innerHTML = "<b>Generated & Stored:</b><br>" + data.map(renderQ).join("<hr>");
-  } catch (err) {
-    document.getElementById("result").innerHTML = "Error:<br>" + err;
-  }
-  fetchDBQuestions();
-};
 
-function renderQ(q) {
-  if (q.type === "mcq") {
-    return `<div class="mcq"><b>Q:</b> ${q.question_text}<br>
-      <b>Options:</b> ${q.options.join(", ")}<br>
-      <b>Answer:</b> ${q.correct_option}</div>`;
-  } else {
-    return `<div class="subjective"><b>Q:</b> ${q.question_text}<br>
-      <b>Model Answer:</b> ${q.answer}</div>`;
-  }
-}
+    async function generateQuestions() {
+      const btn = document.getElementById('generateBtn');
+      const spinner = btn.querySelector('.spinner');
+      const btnText = btn.querySelector('.btn-text');
+      spinner.classList.remove('hidden');
+      btnText.textContent = 'Generating...';
+      btn.disabled = true;
 
-async function fetchDBQuestions() {
-  document.getElementById("db-questions").innerHTML = "Loading...";
-  try {
-    const resp = await fetch(`${backendUrl}/questions/`);
-    const data = await resp.json();
-    if (!Array.isArray(data)) throw new Error(data.detail || "Unexpected response");
-    document.getElementById("db-questions").innerHTML = data.map(renderQ).join("<hr>");
-  } catch (err) {
-    document.getElementById("db-questions").innerHTML = "Error:<br>" + err;
-  }
-}
+      const data = {
+        topic: document.getElementById("topic").value,
+        difficulty: document.getElementById("difficulty").value,
+        skill_type: document.getElementById("skill_type").value,
+        managerial_level: document.getElementById("managerial_level").value || null,
+        num_questions: parseInt(document.getElementById("num_questions").value, 10),
+        question_type: document.getElementById("question_type").value
+      };
 
-// Initial load
-fetchDBQuestions();
-</script>
+      try {
+        const resp = await fetch(`${backendUrl}/generate_questions_batch/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (!Array.isArray(result)) throw new Error(result.detail || "Unexpected response");
+        displayQuestions(result, 'generatedContainer');
+        fetchDBQuestions();
+      } catch (err) {
+        document.getElementById('generatedContainer').innerHTML = "<li style='color:#d66;'>Error:<br>" + err + "</li>";
+      } finally {
+        spinner.classList.add('hidden');
+        btnText.textContent = 'Generate Questions';
+        btn.disabled = false;
+      }
+    }
+
+    async function fetchDBQuestions() {
+      const container = document.getElementById('databaseContainer');
+      container.innerHTML = "<li>Loading...</li>";
+      try {
+        const resp = await fetch(`${backendUrl}/questions/`);
+        const data = await resp.json();
+        if (!Array.isArray(data)) throw new Error(data.detail || "Unexpected response");
+        displayQuestions(data, 'databaseContainer');
+      } catch (err) {
+        container.innerHTML = "<li style='color:#d66;'>Error:<br>" + err + "</li>";
+      }
+    }
+
+    function displayQuestions(questions, containerId) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      if (!questions || questions.length === 0) {
+        container.innerHTML = '<li>No questions available.</li>';
+        return;
+      }
+      questions.forEach((q, i) => {
+        const li = document.createElement('li');
+        li.style.animationDelay = (0.1 + i * 0.08) + 's';
+
+        const type = document.createElement('div');
+        type.className = 'question-type';
+        type.textContent = (q.type || '').toUpperCase();
+        li.appendChild(type);
+
+        const question = document.createElement('div');
+        question.className = 'question-text';
+        question.innerHTML = (q.question || q.question_text || '');
+        li.appendChild(question);
+
+        if (q.type === 'mcq' && Array.isArray(q.options)) {
+          const ul = document.createElement('ul');
+          ul.className = 'options-list';
+          q.options.forEach(opt => {
+            const optLi = document.createElement('li');
+            optLi.textContent = opt;
+            ul.appendChild(optLi);
+          });
+          li.appendChild(ul);
+        }
+
+        const answer = document.createElement('div');
+        answer.className = 'answer-label';
+        // Animate correct answer value for MCQ
+        const answerValue = document.createElement('span');
+        answerValue.className = 'answer-value';
+        answerValue.textContent = ' ' + (q.answer || q.correct_option || '—');
+        if (q.type === 'mcq') {
+          answerValue.classList.add('correct-anim');
+        }
+        answer.innerHTML = '<span>Correct Answer:</span>';
+        answer.appendChild(answerValue);
+
+        li.appendChild(answer);
+        container.appendChild(li);
+      });
+    }
+  </script>
 </body>
 </html>
