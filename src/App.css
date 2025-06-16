@@ -1,0 +1,40 @@
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/*-------------- Learning Path Scrollbar -------------------- */
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--chart-2)) hsl(var(--background));
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  border-radius: 6px;
+  background: hsl(var(--background));
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--chart-2));
+  border-radius: 6px;
+}
+
+/* Truncate and ellipsis for dropdown course name and skill */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/*-------------- Learning Path Scrollbar -------------------- */
